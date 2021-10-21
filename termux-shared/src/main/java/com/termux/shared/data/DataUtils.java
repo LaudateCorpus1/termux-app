@@ -4,12 +4,14 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 
-import java.util.LinkedHashSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 public class DataUtils {
 
+    /** Max safe limit of data size to prevent TransactionTooLargeException when transferring data
+     * inside or to other apps via transactions. */
     public static final int TRANSACTION_SIZE_LIMIT_IN_BYTES = 100 * 1024; // 100KB
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
@@ -98,6 +100,17 @@ public class DataUtils {
     }
 
     /**
+     * Get the {@code String} from an {@link Integer}.
+     *
+     * @param value The {@link Integer} value.
+     * @param def The default {@link String} value.
+     * @return Returns {@code value} if it is not {@code null}, otherwise returns {@code def}.
+     */
+    public static String getStringFromInteger(Integer value, String def) {
+        return (value == null) ? def : String.valueOf((int) value);
+    }
+
+    /**
      * Get the {@code hex string} from a {@link byte[]}.
      *
      * @param bytes The {@link byte[]} value.
@@ -160,9 +173,37 @@ public class DataUtils {
         return (object == null) ? def : object;
     }
 
+    /**
+     * Get the {@link String} itself if it is not {@code null} or empty, otherwise default.
+     *
+     * @param value The {@link String} to check.
+     * @param def The default {@link String}.
+     * @return Returns {@code value} if it is not {@code null} or empty, otherwise returns {@code def}.
+     */
+    public static String getDefaultIfUnset(@Nullable String value, String def) {
+        return (value == null || value.isEmpty()) ? def : value;
+    }
+
     /** Check if a string is null or empty. */
     public static boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
+    }
+
+
+
+    /** Get size of a serializable object. */
+    public static long getSerializedSize(Serializable object) {
+        if (object == null) return 0;
+        try {
+            ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteOutputStream);
+            objectOutputStream.writeObject(object);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+            return byteOutputStream.toByteArray().length;
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
 }

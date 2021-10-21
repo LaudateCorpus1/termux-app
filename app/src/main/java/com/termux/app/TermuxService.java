@@ -19,6 +19,8 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.widget.ArrayAdapter;
 
+import androidx.annotation.Nullable;
+
 import com.termux.R;
 import com.termux.app.settings.properties.TermuxAppSharedProperties;
 import com.termux.app.terminal.TermuxTerminalSessionClient;
@@ -46,8 +48,6 @@ import com.termux.terminal.TerminalSessionClient;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 /**
  * A service holding a list of {@link TermuxSession} in {@link #mTermuxSessions} and background {@link TermuxTask}
@@ -364,10 +364,11 @@ public final class TermuxService extends Service implements TermuxTask.TermuxTas
             executionCommand.arguments = IntentUtils.getStringArrayExtraIfSet(intent, TERMUX_SERVICE.EXTRA_ARGUMENTS, null);
             if (executionCommand.inBackground)
                 executionCommand.stdin = IntentUtils.getStringExtraIfSet(intent, TERMUX_SERVICE.EXTRA_STDIN, null);
+                executionCommand.backgroundCustomLogLevel = IntentUtils.getIntegerExtraIfSet(intent, TERMUX_SERVICE.EXTRA_BACKGROUND_CUSTOM_LOG_LEVEL, null);
         }
 
         executionCommand.workingDirectory = IntentUtils.getStringExtraIfSet(intent, TERMUX_SERVICE.EXTRA_WORKDIR, null);
-        executionCommand.isFailsafe = intent.getBooleanExtra(TERMUX_ACTIVITY.ACTION_FAILSAFE_SESSION, false);
+        executionCommand.isFailsafe = intent.getBooleanExtra(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
         executionCommand.sessionAction = intent.getStringExtra(TERMUX_SERVICE.EXTRA_SESSION_ACTION);
         executionCommand.commandLabel = IntentUtils.getStringExtraIfSet(intent, TERMUX_SERVICE.EXTRA_COMMAND_LABEL, "Execution Intent Command");
         executionCommand.commandDescription = IntentUtils.getStringExtraIfSet(intent, TERMUX_SERVICE.EXTRA_COMMAND_DESCRIPTION, null);
@@ -426,7 +427,7 @@ public final class TermuxService extends Service implements TermuxTask.TermuxTas
         }
 
         if (Logger.getLogLevel() >= Logger.LOG_LEVEL_VERBOSE)
-            Logger.logVerbose(LOG_TAG, executionCommand.toString());
+            Logger.logVerboseExtended(LOG_TAG, executionCommand.toString());
 
         TermuxTask newTermuxTask = TermuxTask.execute(this, executionCommand, this, new TermuxShellEnvironmentClient(), false);
         if (newTermuxTask == null) {
@@ -518,7 +519,7 @@ public final class TermuxService extends Service implements TermuxTask.TermuxTas
         }
 
         if (Logger.getLogLevel() >= Logger.LOG_LEVEL_VERBOSE)
-            Logger.logVerbose(LOG_TAG, executionCommand.toString());
+            Logger.logVerboseExtended(LOG_TAG, executionCommand.toString());
 
         // If the execution command was started for a plugin, only then will the stdout be set
         // Otherwise if command was manually started by the user like by adding a new terminal session,
@@ -707,7 +708,7 @@ public final class TermuxService extends Service implements TermuxTask.TermuxTas
 
         // Set pending intent to be launched when notification is clicked
         Intent notificationIntent = TermuxActivity.newInstance(this);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
 
         // Set notification text
@@ -731,8 +732,8 @@ public final class TermuxService extends Service implements TermuxTask.TermuxTas
         // Build the notification
         Notification.Builder builder =  NotificationUtils.geNotificationBuilder(this,
             TermuxConstants.TERMUX_APP_NOTIFICATION_CHANNEL_ID, priority,
-            getText(R.string.application_name), notificationText, null,
-            pendingIntent, NotificationUtils.NOTIFICATION_MODE_SILENT);
+            TermuxConstants.TERMUX_APP_NAME, notificationText, null,
+            contentIntent, null, NotificationUtils.NOTIFICATION_MODE_SILENT);
         if (builder == null)  return null;
 
         // No need to show a timestamp:

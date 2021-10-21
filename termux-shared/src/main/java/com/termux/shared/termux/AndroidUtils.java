@@ -38,7 +38,11 @@ public class AndroidUtils {
         AndroidUtils.appendPropertyToMarkdown(markdownString,"VERSION_NAME", PackageUtils.getVersionNameForPackage(context));
         AndroidUtils.appendPropertyToMarkdown(markdownString,"VERSION_CODE", PackageUtils.getVersionCodeForPackage(context));
         AndroidUtils.appendPropertyToMarkdown(markdownString,"TARGET_SDK", PackageUtils.getTargetSDKForPackage(context));
-        AndroidUtils.appendPropertyToMarkdown(markdownString,"IS_DEBUG_BUILD", PackageUtils.isAppForPackageADebugBuild(context));
+        AndroidUtils.appendPropertyToMarkdown(markdownString,"IS_DEBUGGABLE_BUILD", PackageUtils.isAppForPackageADebuggableBuild(context));
+
+        if (PackageUtils.isAppInstalledOnExternalStorage(context)) {
+            AndroidUtils.appendPropertyToMarkdown(markdownString,"IS_INSTALLED_ON_EXTERNAL_STORAGE", true);
+        }
 
         String filesDir = context.getFilesDir().getAbsolutePath();
         if (!filesDir.equals("/data/user/0/" + context.getPackageName() + "/files") &&
@@ -178,6 +182,13 @@ public class AndroidUtils {
     public static String getCurrentTimeStamp() {
         @SuppressLint("SimpleDateFormat")
         final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return df.format(new Date());
+    }
+
+    public static String getCurrentMilliSecondUTCTimeStamp() {
+        @SuppressLint("SimpleDateFormat")
+        final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS z");
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
         return df.format(new Date());
     }

@@ -66,7 +66,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            shrinkResources true
+            shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
@@ -176,11 +176,11 @@ clean {
 
 task downloadBootstraps() {
     doLast {
-        def version = "2021.06.30-r1"
-        downloadBootstrap("aarch64", "ce56ce9a4e8845bd1d35cc2695bbdd636c72625ee10ce21c9b98ab38ebbee5ab", version)
-        downloadBootstrap("arm",     "537e81951c7d3d3f3def9ce6778e1032457488e21edb2c037a1e0e680c39e747", version)
-        downloadBootstrap("i686",    "3c2ca858c0225671c00c44ac182e31819ffa93ec624e95e02824e7d6d30ca1b4", version)
-        downloadBootstrap("x86_64",  "93c50d36b45bca42bb014395e8e184e5b540adcad5d4e215f7e64ebf0d655d2b", version)
+        def version = "2021.10.03-r1"
+        downloadBootstrap("aarch64", "abba0bab1155ca081b96556f5ac69c7f85f332f67665503fc488a82338a739de", version)
+        downloadBootstrap("arm",     "3ab34567d69be26183f1bd30b2a9a20fb8d95c4217c55fbe4ea0dda92f9ebc35", version)
+        downloadBootstrap("i686",    "fda0463b7a448362d91f56448518eae9985f3d069e24608e17c2c66097993037", version)
+        downloadBootstrap("x86_64",  "de38b87a74760b268eb5f6ae289edd3fc5b3c86e02cb32f5f4a863161f4de354", version)
     }
 }
 

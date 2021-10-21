@@ -34,6 +34,8 @@ public interface TerminalViewClient {
 
     boolean shouldUseCtrlSpaceWorkaround();
 
+    boolean isTerminalViewSelected();
+
 
 
     void copyModeChanged(boolean copyMode);
@@ -51,6 +53,11 @@ public interface TerminalViewClient {
     boolean readControlKey();
 
     boolean readAltKey();
+
+    boolean readShiftKey();
+
+    boolean readFnKey();
+
 
 
     boolean onCodePoint(int codePoint, boolean ctrlDown, TerminalSession session);

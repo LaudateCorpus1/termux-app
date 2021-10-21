@@ -29,10 +29,12 @@ import android.view.autofill.AutofillManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.termux.R;
 import com.termux.app.terminal.TermuxActivityRootView;
+import com.termux.shared.activities.ReportActivity;
 import com.termux.shared.packages.PermissionUtils;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_ACTIVITY;
@@ -43,11 +45,12 @@ import com.termux.app.terminal.TermuxSessionsListViewController;
 import com.termux.app.terminal.io.TerminalToolbarViewPager;
 import com.termux.app.terminal.TermuxTerminalSessionClient;
 import com.termux.app.terminal.TermuxTerminalViewClient;
-import com.termux.app.terminal.io.extrakeys.ExtraKeysView;
+import com.termux.shared.terminal.io.extrakeys.ExtraKeysView;
 import com.termux.app.settings.properties.TermuxAppSharedProperties;
 import com.termux.shared.interact.TextInputDialogUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxUtils;
+import com.termux.shared.view.ViewUtils;
 import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.app.utils.CrashUtils;
@@ -182,6 +185,9 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
         // notification with the crash details if it did
         CrashUtils.notifyAppCrashOnLastRun(this, LOG_TAG);
 
+        // Delete ReportInfo serialized object files from cache older than 14 days
+        ReportActivity.deleteReportInfoFilesOlderThanXDays(this, 14, false);
+
         // Load termux shared properties
         mProperties = new TermuxAppSharedProperties(this);
 
@@ -199,6 +205,8 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
             mIsInvalidState = true;
             return;
         }
+
+        setMargins();
 
         mTermuxActivityRootView = findViewById(R.id.activity_termux_root_view);
         mTermuxActivityRootView.setActivity(this);
@@ -357,7 +365,7 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
                         Bundle bundle = getIntent().getExtras();
                         boolean launchFailsafe = false;
                         if (bundle != null) {
-                            launchFailsafe = bundle.getBoolean(TERMUX_ACTIVITY.ACTION_FAILSAFE_SESSION, false);
+                            launchFailsafe = bundle.getBoolean(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
                         }
                         mTermuxTerminalSessionClient.addNewSession(launchFailsafe, null);
                     } catch (WindowManager.BadTokenException e) {
@@ -372,7 +380,7 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
             Intent i = getIntent();
             if (i != null && Intent.ACTION_RUN.equals(i.getAction())) {
                 // Android 7.1 app shortcut from res/xml/shortcuts.xml.
-                boolean isFailSafe = i.getBooleanExtra(TERMUX_ACTIVITY.ACTION_FAILSAFE_SESSION, false);
+                boolean isFailSafe = i.getBooleanExtra(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
                 mTermuxTerminalSessionClient.addNewSession(isFailSafe, null);
             } else {
                 mTermuxTerminalSessionClient.setCurrentSession(mTermuxTerminalSessionClient.getCurrentStoredSessionOrLast());
@@ -410,6 +418,13 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
                 android.R.color.background_dark));
             ((ImageButton) findViewById(R.id.settings_button)).setColorFilter(Color.WHITE);
         }
+    }
+
+    private void setMargins() {
+        RelativeLayout relativeLayout = findViewById(R.id.activity_termux_root_relative_layout);
+        int marginHorizontal = mProperties.getTerminalMarginHorizontal();
+        int marginVertical = mProperties.getTerminalMarginVertical();
+        ViewUtils.setLayoutMarginsInDp(relativeLayout, marginHorizontal, marginVertical, marginHorizontal, marginVertical);
     }
 
 
@@ -452,7 +467,7 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
 
 
     private void setTerminalToolbarView(Bundle savedInstanceState) {
-        final ViewPager terminalToolbarViewPager = findViewById(R.id.terminal_toolbar_view_pager);
+        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
         if (mPreferences.shouldShowTerminalToolbar()) terminalToolbarViewPager.setVisibility(View.VISIBLE);
 
         ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
@@ -469,8 +484,9 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
     }
 
     private void setTerminalToolbarHeight() {
-        final ViewPager terminalToolbarViewPager = findViewById(R.id.terminal_toolbar_view_pager);
+        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
         if (terminalToolbarViewPager == null) return;
+
         ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
         layoutParams.height = (int) Math.round(mTerminalToolbarDefaultHeight *
             (mProperties.getExtraKeysInfo() == null ? 0 : mProperties.getExtraKeysInfo().getMatrix().length) *
@@ -479,13 +495,13 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
     }
 
     public void toggleTerminalToolbar() {
-        final ViewPager terminalToolbarViewPager = findViewById(R.id.terminal_toolbar_view_pager);
+        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
         if (terminalToolbarViewPager == null) return;
 
         final boolean showNow = mPreferences.toogleShowTerminalToolbar();
         Logger.showToast(this, (showNow ? getString(R.string.msg_enabling_terminal_toolbar) : getString(R.string.msg_disabling_terminal_toolbar)), true);
         terminalToolbarViewPager.setVisibility(showNow ? View.VISIBLE : View.GONE);
-        if (showNow && terminalToolbarViewPager.getCurrentItem() == 1) {
+        if (showNow && isTerminalToolbarTextInputViewSelected()) {
             // Focus the text input view if just revealed.
             findViewById(R.id.terminal_toolbar_text_input).requestFocus();
         }
@@ -744,6 +760,20 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
         return (DrawerLayout) findViewById(R.id.drawer_layout);
     }
 
+
+    public ViewPager getTerminalToolbarViewPager() {
+        return (ViewPager) findViewById(R.id.terminal_toolbar_view_pager);
+    }
+
+    public boolean isTerminalViewSelected() {
+        return getTerminalToolbarViewPager().getCurrentItem() == 0;
+    }
+
+    public boolean isTerminalToolbarTextInputViewSelected() {
+        return getTerminalToolbarViewPager().getCurrentItem() == 1;
+    }
+
+
     public void termuxSessionListNotifyUpdated() {
         mTermuxSessionListViewController.notifyDataSetChanged();
     }
@@ -850,10 +880,12 @@ public final class TermuxActivity extends Activity implements ServiceConnection 
             mProperties.loadTermuxPropertiesFromDisk();
 
             if (mExtraKeysView != null) {
+                mExtraKeysView.setButtonTextAllCaps(mProperties.shouldExtraKeysTextBeAllCaps());
                 mExtraKeysView.reload(mProperties.getExtraKeysInfo());
             }
         }
 
+        setMargins();
         setTerminalToolbarHeight();
 
         if (mTermuxTerminalSessionClient != null)

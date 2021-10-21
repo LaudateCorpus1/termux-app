@@ -1,7 +1,7 @@
 package com.termux.shared.settings.preferences;
 
 /*
- * Version: v0.11.0
+ * Version: v0.15.0
  *
  * Changelog
  *
@@ -48,6 +48,23 @@ package com.termux.shared.settings.preferences;
  * - 0.11.0 (2021-07-08)
  *      - Added following to `TERMUX_APP`:
  *          `KEY_DISABLE_TERMINAL_MARGIN_ADJUSTMENT`.
+ *
+ * - 0.12.0 (2021-08-27)
+ *      - Added `TERMUX_API_APP.KEY_LOG_LEVEL`, `TERMUX_BOOT_APP.KEY_LOG_LEVEL`,
+ *          `TERMUX_FLOAT_APP.KEY_LOG_LEVEL`, `TERMUX_STYLING_APP.KEY_LOG_LEVEL`,
+ *          `TERMUX_Widget_APP.KEY_LOG_LEVEL`.
+ *
+ * - 0.13.0 (2021-09-02)
+ *      - Added following to `TERMUX_FLOAT_APP`:
+ *          `KEY_WINDOW_X`, `KEY_WINDOW_Y`, `KEY_WINDOW_WIDTH`, `KEY_WINDOW_HEIGHT`, `KEY_FONTSIZE`,
+ *          `KEY_TERMINAL_VIEW_KEY_LOGGING_ENABLED`.
+ *
+ * - 0.14.0 (2021-09-04)
+ *      - Added `TERMUX_WIDGET_APP.KEY_TOKEN`.
+ *
+ * - 0.15.0 (2021-09-05)
+ *      - Added following to `TERMUX_TASKER_APP`:
+ *          `KEY_LAST_PENDING_INTENT_REQUEST_CODE` and `DEFAULT_VALUE_KEY_LAST_PENDING_INTENT_REQUEST_CODE`.
  */
 
 /**
@@ -115,7 +132,7 @@ public final class TermuxPreferenceConstants {
 
 
         /**
-         * Defines the key for current termux log level.
+         * Defines the key for current log level.
          */
         public static final String KEY_LOG_LEVEL = "log_level";
 
@@ -147,15 +164,130 @@ public final class TermuxPreferenceConstants {
 
     }
 
+
+
     /**
-     * Termux Tasker app constants.
+     * Termux:API app constants.
+     */
+    public static final class TERMUX_API_APP {
+
+        /**
+         * Defines the key for current log level.
+         */
+        public static final String KEY_LOG_LEVEL = "log_level";
+
+    }
+
+
+
+    /**
+     * Termux:Boot app constants.
+     */
+    public static final class TERMUX_BOOT_APP {
+
+        /**
+         * Defines the key for current log level.
+         */
+        public static final String KEY_LOG_LEVEL = "log_level";
+
+    }
+
+
+
+    /**
+     * Termux:Float app constants.
+     */
+    public static final class TERMUX_FLOAT_APP {
+
+        /**
+         * The float window x coordinate.
+         */
+        public static final String KEY_WINDOW_X = "window_x";
+
+        /**
+         * The float window y coordinate.
+         */
+        public static final String KEY_WINDOW_Y = "window_y";
+
+        /**
+         * The float window width.
+         */
+        public static final String KEY_WINDOW_WIDTH = "window_width";
+
+        /**
+         * The float window height.
+         */
+        public static final String KEY_WINDOW_HEIGHT = "window_height";
+
+        /**
+         * Defines the key for font size of termux terminal view.
+         */
+        public static final String KEY_FONTSIZE = "fontsize";
+
+        /**
+         * Defines the key for current log level.
+         */
+        public static final String KEY_LOG_LEVEL = "log_level";
+
+        /**
+         * Defines the key for whether termux terminal view key logging is enabled or not
+         */
+        public static final String KEY_TERMINAL_VIEW_KEY_LOGGING_ENABLED = "terminal_view_key_logging_enabled";
+        public static final boolean DEFAULT_VALUE_TERMINAL_VIEW_KEY_LOGGING_ENABLED = false;
+
+    }
+
+
+
+    /**
+     * Termux:Styling app constants.
+     */
+    public static final class TERMUX_STYLING_APP {
+
+        /**
+         * Defines the key for current log level.
+         */
+        public static final String KEY_LOG_LEVEL = "log_level";
+
+    }
+
+
+
+    /**
+     * Termux:Tasker app constants.
      */
     public static final class TERMUX_TASKER_APP {
 
         /**
-         * Defines the key for current termux log level.
+         * Defines the key for current log level.
          */
         public static final String KEY_LOG_LEVEL = "log_level";
+
+
+        /**
+         * Defines the key for last used PendingIntent request code.
+         */
+        public static final String KEY_LAST_PENDING_INTENT_REQUEST_CODE = "last_pending_intent_request_code";
+        public static final int DEFAULT_VALUE_KEY_LAST_PENDING_INTENT_REQUEST_CODE = 0;
+
+    }
+
+
+
+    /**
+     * Termux:Widget app constants.
+     */
+    public static final class TERMUX_WIDGET_APP {
+
+        /**
+         * Defines the key for current log level.
+         */
+        public static final String KEY_LOG_LEVEL = "log_level";
+
+        /**
+         * Defines the key for current token for shortcuts.
+         */
+        public static final String KEY_TOKEN = "token";
 
     }
 

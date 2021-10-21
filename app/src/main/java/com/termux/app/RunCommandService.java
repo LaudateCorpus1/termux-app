@@ -73,7 +73,7 @@ public class RunCommandService extends Service {
             errmsg = this.getString(R.string.error_run_command_service_invalid_intent_action, intent.getAction());
             executionCommand.setStateFailed(Errno.ERRNO_FAILED.getCode(), errmsg);
             PluginUtils.processPluginExecutionCommandError(this, LOG_TAG, executionCommand, false);
-            return Service.START_NOT_STICKY;
+            return stopService();
         }
 
         String executableExtra = executionCommand.executable = IntentUtils.getStringExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_COMMAND_PATH, null);
@@ -101,6 +101,7 @@ public class RunCommandService extends Service {
         executionCommand.stdin = IntentUtils.getStringExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_STDIN, null);
         executionCommand.workingDirectory = IntentUtils.getStringExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_WORKDIR, null);
         executionCommand.inBackground = intent.getBooleanExtra(RUN_COMMAND_SERVICE.EXTRA_BACKGROUND, false);
+        executionCommand.backgroundCustomLogLevel = IntentUtils.getIntegerExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_BACKGROUND_CUSTOM_LOG_LEVEL, null);
         executionCommand.sessionAction = intent.getStringExtra(RUN_COMMAND_SERVICE.EXTRA_SESSION_ACTION);
         executionCommand.commandLabel = IntentUtils.getStringExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_COMMAND_LABEL, "RUN_COMMAND Execution Intent Command");
         executionCommand.commandDescription = IntentUtils.getStringExtraIfSet(intent, RUN_COMMAND_SERVICE.EXTRA_COMMAND_DESCRIPTION, null);
@@ -121,11 +122,11 @@ public class RunCommandService extends Service {
         // user knows someone tried to run a command in termux context, since it may be malicious
         // app or imported (tasker) plugin project and not the user himself. If a pending intent is
         // also sent, then its creator is also logged and shown.
-        errmsg = PluginUtils.checkIfRunCommandServiceAllowExternalAppsPolicyIsViolated(this);
+        errmsg = PluginUtils.checkIfAllowExternalAppsPolicyIsViolated(this, LOG_TAG);
         if (errmsg != null) {
             executionCommand.setStateFailed(Errno.ERRNO_FAILED.getCode(), errmsg);
             PluginUtils.processPluginExecutionCommandError(this, LOG_TAG, executionCommand, true);
-            return Service.START_NOT_STICKY;
+            return stopService();
         }
 
 
@@ -135,7 +136,7 @@ public class RunCommandService extends Service {
             errmsg  = this.getString(R.string.error_run_command_service_mandatory_extra_missing, RUN_COMMAND_SERVICE.EXTRA_COMMAND_PATH);
             executionCommand.setStateFailed(Errno.ERRNO_FAILED.getCode(), errmsg);
             PluginUtils.processPluginExecutionCommandError(this, LOG_TAG, executionCommand, false);
-            return Service.START_NOT_STICKY;
+            return stopService();
         }
 
         // Get canonical path of executable
@@ -147,10 +148,9 @@ public class RunCommandService extends Service {
             FileUtils.APP_EXECUTABLE_FILE_PERMISSIONS, true, true,
             false);
         if (error != null) {
-            error.appendMessage("\n" + this.getString(R.string.msg_executable_absolute_path, executionCommand.executable));
             executionCommand.setStateFailed(error);
             PluginUtils.processPluginExecutionCommandError(this, LOG_TAG, executionCommand, false);
-            return Service.START_NOT_STICKY;
+            return stopService();
         }
 
 
@@ -169,10 +169,9 @@ public class RunCommandService extends Service {
                 true, true, true,
                 false, true);
             if (error != null) {
-                error.appendMessage("\n" + this.getString(R.string.msg_working_directory_absolute_path, executionCommand.workingDirectory));
                 executionCommand.setStateFailed(error);
                 PluginUtils.processPluginExecutionCommandError(this, LOG_TAG, executionCommand, false);
-                return Service.START_NOT_STICKY;
+                return stopService();
             }
         }
 
@@ -188,7 +187,7 @@ public class RunCommandService extends Service {
 
         executionCommand.executableUri = new Uri.Builder().scheme(TERMUX_SERVICE.URI_SCHEME_SERVICE_EXECUTE).path(executionCommand.executable).build();
 
-        Logger.logVerbose(LOG_TAG, executionCommand.toString());
+        Logger.logVerboseExtended(LOG_TAG, executionCommand.toString());
 
         // Create execution intent with the action TERMUX_SERVICE#ACTION_SERVICE_EXECUTE to be sent to the TERMUX_SERVICE
         Intent execIntent = new Intent(TERMUX_SERVICE.ACTION_SERVICE_EXECUTE, executionCommand.executableUri);
@@ -197,6 +196,7 @@ public class RunCommandService extends Service {
         execIntent.putExtra(TERMUX_SERVICE.EXTRA_STDIN, executionCommand.stdin);
         if (executionCommand.workingDirectory != null && !executionCommand.workingDirectory.isEmpty()) execIntent.putExtra(TERMUX_SERVICE.EXTRA_WORKDIR, executionCommand.workingDirectory);
         execIntent.putExtra(TERMUX_SERVICE.EXTRA_BACKGROUND, executionCommand.inBackground);
+        execIntent.putExtra(TERMUX_SERVICE.EXTRA_BACKGROUND_CUSTOM_LOG_LEVEL, DataUtils.getStringFromInteger(executionCommand.backgroundCustomLogLevel, null));
         execIntent.putExtra(TERMUX_SERVICE.EXTRA_SESSION_ACTION, executionCommand.sessionAction);
         execIntent.putExtra(TERMUX_SERVICE.EXTRA_COMMAND_LABEL, executionCommand.commandLabel);
         execIntent.putExtra(TERMUX_SERVICE.EXTRA_COMMAND_DESCRIPTION, executionCommand.commandDescription);
@@ -219,8 +219,11 @@ public class RunCommandService extends Service {
             this.startService(execIntent);
         }
 
-        runStopForeground();
+        return stopService();
+    }
 
+    private int stopService() {
+        runStopForeground();
         return Service.START_NOT_STICKY;
     }
 
@@ -242,7 +245,7 @@ public class RunCommandService extends Service {
         Notification.Builder builder =  NotificationUtils.geNotificationBuilder(this,
             TermuxConstants.TERMUX_RUN_COMMAND_NOTIFICATION_CHANNEL_ID, Notification.PRIORITY_LOW,
             TermuxConstants.TERMUX_RUN_COMMAND_NOTIFICATION_CHANNEL_NAME, null, null,
-            null, NotificationUtils.NOTIFICATION_MODE_SILENT);
+            null, null, NotificationUtils.NOTIFICATION_MODE_SILENT);
         if (builder == null)  return null;
 
         // No need to show a timestamp:
